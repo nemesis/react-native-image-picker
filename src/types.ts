@@ -26,9 +26,7 @@ export interface Asset {
   type?: string; //TODO
   fileName?: string;
   duration?: number;
-  latitude?: string;
-  longitude?: string;
-  dateTime?: string;
+  creationTime?: number;
 }
 
 export interface ImagePickerResponse {

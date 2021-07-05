@@ -21,6 +21,8 @@ NSString *errPermission = @"permission";
 NSString *errOthers = @"others";
 RNImagePickerTarget target;
 
+NSDateFormatter* exifCreationTimeFormatter;
+
 RCT_EXPORT_MODULE();
 
 RCT_EXPORT_METHOD(launchCamera:(NSDictionary *)options callback:(RCTResponseSenderBlock)callback)
@@ -37,6 +39,14 @@ RCT_EXPORT_METHOD(launchImageLibrary:(NSDictionary *)options callback:(RCTRespon
     dispatch_async(dispatch_get_main_queue(), ^{
         [self launchImagePicker:options callback:callback];
     });
+}
+
++ (void)initialize
+{
+    [super initialize];
+    exifCreationTimeFormatter = [[NSDateFormatter alloc] init];
+    exifCreationTimeFormatter.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
+    [exifCreationTimeFormatter setDateFormat:@"yyyy:MM:dd HH:mm:ss"];
 }
 
 - (void)launchImagePicker:(NSDictionary *)options callback:(RCTResponseSenderBlock)callback
@@ -194,15 +204,12 @@ RCT_EXPORT_METHOD(launchImageLibrary:(NSDictionary *)options callback:(RCTRespon
     CGImageSourceRef source = CGImageSourceCreateWithData((CFDataRef)data, NULL);
     NSDictionary *metadata = (NSDictionary *) CFBridgingRelease(CGImageSourceCopyPropertiesAtIndex(source, 0, NULL));
     NSDictionary *exifTiffDictionary = [metadata objectForKey:(NSString *)kCGImagePropertyTIFFDictionary];
-    NSDictionary *exifGPSDictionary = [metadata objectForKey:(NSString *)kCGImagePropertyGPSDictionary];
- 
-    NSNumber *latitude = [exifGPSDictionary objectForKey:@"Latitude"];
-    NSNumber *longitude = [exifGPSDictionary objectForKey:@"Longitude"];
+
     NSString *dateTime = [exifTiffDictionary objectForKey:@"DateTime"];
-    
-    asset[@"dateTime"] = @(dateTime.UTF8String);
-    asset[@"latitude"] = @(latitude.floatValue);
-    asset[@"longitude"] = @(longitude.floatValue);
+
+    if (dateTime) {
+        asset[@"creationTime"] = @([exifCreationTimeFormatter dateFromString:@(dateTime.UTF8String)].timeIntervalSince1970 * 1000);
+    }
     
     if ([fileType isEqualToString:@"jpg"]) {
         data = UIImageJPEGRepresentation(image, [self.options[@"quality"] floatValue]);
