@@ -36,10 +36,6 @@
     "image",
     "picker"
   ],
-  "peerDependencies": {
-    "react": "*",
-    "react-native": "*"
-  },
   "repository": {
     "type": "git",
     "url": "https://github.com/react-native-image-picker/react-native-image-picker.git"
@@ -49,7 +45,8 @@
     "@semantic-release/git": "9.0.0",
     "@types/react": "16.9.54",
     "@types/react-native": "0.63.30",
-    "semantic-release": "17.3.0"
+    "semantic-release": "17.3.0",
+    "typescript": "4.1.5"
   },
   "@react-native-community/bob": {
     "source": "src",
