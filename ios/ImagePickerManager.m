@@ -143,26 +143,58 @@ RCT_EXPORT_METHOD(launchImageLibrary:(NSDictionary *)options callback:(RCTRespon
     dispatch_group_t completionGroup = dispatch_group_create();
     NSMutableArray<NSDictionary *> *assets = [[NSMutableArray alloc] initWithCapacity:results.count];
     
-    for (PHPickerResult *result in results) {
-        NSItemProvider *provider = result.itemProvider;
-        dispatch_group_enter(completionGroup);
-        
-        if ([provider hasItemConformingToTypeIdentifier:(NSString *)kUTTypeImage]) {
-            [provider loadDataRepresentationForTypeIdentifier:(NSString *)kUTTypeImage completionHandler:^(NSData * _Nullable data, NSError * _Nullable error) {
-                UIImage *image = [[UIImage alloc] initWithData:data];
-                
-                [assets addObject:[self mapImageToAsset:image data:data]];
-                dispatch_group_leave(completionGroup);
-            }];
-        }
-        
-        if ([provider hasItemConformingToTypeIdentifier:(NSString *)kUTTypeMovie]) {
-            [provider loadFileRepresentationForTypeIdentifier:(NSString *)kUTTypeMovie completionHandler:^(NSURL * _Nullable url, NSError * _Nullable error) {
-                [assets addObject:[self mapVideoToAsset:url error:nil]];
-                dispatch_group_leave(completionGroup);
-            }];
+    NSInteger countOfBatches = results.count / 10;
+    NSMutableArray* batches = [[NSMutableArray alloc] initWithCapacity:countOfBatches];
+    
+    for (NSInteger currentBatch = 0; currentBatch < countOfBatches; currentBatch++) {
+        NSIndexSet* batchIndexSet = [NSIndexSet indexSetWithIndexesInRange:NSMakeRange(currentBatch * 10, 10)];
+        NSArray* batch = [results objectsAtIndexes:batchIndexSet];
+        [batches addObject:@[batch]];
+    }
+    
+    for (NSArray* batch in batches) {
+        NSMutableArray* batchAssets = [[NSMutableArray alloc] initWithCapacity:10];
+        for (PHPickerResult* result in batch) {
+            NSItemProvider *provider = result.itemProvider;
+//            dispatch_group_enter(completionGroup);
+            
+            if ([provider hasItemConformingToTypeIdentifier:(NSString *)kUTTypeImage]) {
+                [provider loadDataRepresentationForTypeIdentifier:(NSString *)kUTTypeImage completionHandler:^(NSData * _Nullable data, NSError * _Nullable error) {
+                    UIImage *image = [[UIImage alloc] initWithData:data];
+                    
+                    [batchAssets addObject:[self mapImageToAsset:image data:data]];
+                    
+                    NSMutableDictionary *response = [[NSMutableDictionary alloc] init];
+                    [response setObject:assets forKey:@"assets"];
+                    
+                    self.callback(@[response]);
+                    
+//                    dispatch_group_leave(completionGroup);
+                }];
+            }
         }
     }
+    
+//    for (PHPickerResult *result in results) {
+//        NSItemProvider *provider = result.itemProvider;
+//        dispatch_group_enter(completionGroup);
+//
+//        if ([provider hasItemConformingToTypeIdentifier:(NSString *)kUTTypeImage]) {
+//            [provider loadDataRepresentationForTypeIdentifier:(NSString *)kUTTypeImage completionHandler:^(NSData * _Nullable data, NSError * _Nullable error) {
+//                UIImage *image = [[UIImage alloc] initWithData:data];
+//
+//                [assets addObject:[self mapImageToAsset:image data:data]];
+//                dispatch_group_leave(completionGroup);
+//            }];
+//        }
+//
+//        if ([provider hasItemConformingToTypeIdentifier:(NSString *)kUTTypeMovie]) {
+//            [provider loadFileRepresentationForTypeIdentifier:(NSString *)kUTTypeMovie completionHandler:^(NSURL * _Nullable url, NSError * _Nullable error) {
+//                [assets addObject:[self mapVideoToAsset:url error:nil]];
+//                dispatch_group_leave(completionGroup);
+//            }];
+//        }
+//    }
     
     dispatch_group_notify(completionGroup, dispatch_get_main_queue(), ^{
         //  mapVideoToAsset can fail and return nil.
