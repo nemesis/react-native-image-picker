@@ -165,17 +165,16 @@ RCT_EXPORT_METHOD(launchImageLibrary:(NSDictionary *)options callback:(RCTRespon
         [asset requestContentEditingInputWithOptions:options completionHandler:^(PHContentEditingInput* _Nullable contentEditingInput, NSDictionary * _Nonnull info) {
             NSURL* assetURL = [contentEditingInput fullSizeImageURL];
 
-            if (assetURL) {
-                NSDate* assetDate = asset.creationDate ? asset.creationDate : asset.modificationDate;
-                NSTimeInterval creationTime = [assetDate timeIntervalSince1970];
-                NSString* filename = [asset valueForKey:@"filename"];
+            NSDate* assetDate = asset.creationDate ? asset.creationDate : asset.modificationDate;
+            NSTimeInterval creationTime = [assetDate timeIntervalSince1970];
+            NSString* filename = [asset valueForKey:@"filename"];
 
-                [assets addObject:@{
-                    @"creationTime": assetDate ? @(creationTime * 1000.0) : [NSNull null],
-                    @"filename": filename ? filename : @"unknown???",
-                    @"uri": [assetURL absoluteString]
-                }];
-            }
+            [assets addObject:@{
+                @"creationTime": assetDate ? @(creationTime * 1000.0) : [NSNull null],
+                @"filename": filename ? filename : [NSNull null],
+                @"uri": assetURL ? [assetURL absoluteString] : [NSNull null]
+            }];
+
 
             dispatch_group_leave(completionGroup);
         }];

@@ -18,9 +18,9 @@ export interface CameraOptions
 }
 
 export interface Asset {
-  creationTime?: number;
-  filename: string;
-  uri: string;
+  creationTime: number | undefined;
+  filename: string | undefined;
+  uri: string | undefined;
 }
 
 export interface ImagePickerResponse {
