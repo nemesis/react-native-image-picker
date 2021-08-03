@@ -143,7 +143,9 @@ RCT_EXPORT_METHOD(launchImageLibrary:(NSDictionary *)options callback:(RCTRespon
     NSMutableArray<NSString *> *assets = [[NSMutableArray alloc] initWithCapacity:results.count];
     
     for (PHPickerResult *result in results) {
-        [assets addObject:result.assetIdentifier];
+        if (result.assetIdentifier) {
+            [assets addObject:result.assetIdentifier];
+        }
     }
     
     dispatch_async(dispatch_get_main_queue(), ^{
