@@ -146,6 +146,8 @@ RCT_EXPORT_METHOD(launchImageLibrary:(NSDictionary *)options callback:(RCTRespon
     dispatch_group_t completionGroup = dispatch_group_create();
 
     for (PHPickerResult *result in results) {
+        dispatch_group_enter(completionGroup);
+
         if (result.assetIdentifier) {
             [assetIdentifiers addObject:result.assetIdentifier];
         }
@@ -160,8 +162,6 @@ RCT_EXPORT_METHOD(launchImageLibrary:(NSDictionary *)options callback:(RCTRespon
 
     PHFetchResult<PHAsset *> *fetchResult = [PHAsset fetchAssetsWithLocalIdentifiers:assetIdentifiers options:nil];
     [fetchResult enumerateObjectsUsingBlock:^(PHAsset* asset, NSUInteger idx, BOOL* stop) {
-        dispatch_group_enter(completionGroup);
-
         [asset requestContentEditingInputWithOptions:options completionHandler:^(PHContentEditingInput* _Nullable contentEditingInput, NSDictionary * _Nonnull info) {
             NSURL* assetURL = [contentEditingInput fullSizeImageURL];
 
@@ -176,6 +176,8 @@ RCT_EXPORT_METHOD(launchImageLibrary:(NSDictionary *)options callback:(RCTRespon
                     @"uri": [assetURL absoluteString]
                 }];
             }
+
+            dispatch_group_leave(completionGroup);
         }];
     }];
 
