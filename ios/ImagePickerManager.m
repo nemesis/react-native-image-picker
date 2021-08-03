@@ -139,40 +139,14 @@ RCT_EXPORT_METHOD(launchImageLibrary:(NSDictionary *)options callback:(RCTRespon
         });
         return;
     }
-    
-    dispatch_group_t completionGroup = dispatch_group_create();
-    NSMutableArray<NSDictionary *> *assets = [[NSMutableArray alloc] initWithCapacity:results.count];
+
+    NSMutableArray<NSString *> *assets = [[NSMutableArray alloc] initWithCapacity:results.count];
     
     for (PHPickerResult *result in results) {
-        NSItemProvider *provider = result.itemProvider;
-        dispatch_group_enter(completionGroup);
-        
-        if ([provider hasItemConformingToTypeIdentifier:(NSString *)kUTTypeImage]) {
-            [provider loadDataRepresentationForTypeIdentifier:(NSString *)kUTTypeImage completionHandler:^(NSData * _Nullable data, NSError * _Nullable error) {
-                UIImage *image = [[UIImage alloc] initWithData:data];
-                
-                [assets addObject:[self mapImageToAsset:image data:data]];
-                dispatch_group_leave(completionGroup);
-            }];
-        }
-        
-        if ([provider hasItemConformingToTypeIdentifier:(NSString *)kUTTypeMovie]) {
-            [provider loadFileRepresentationForTypeIdentifier:(NSString *)kUTTypeMovie completionHandler:^(NSURL * _Nullable url, NSError * _Nullable error) {
-                [assets addObject:[self mapVideoToAsset:url error:nil]];
-                dispatch_group_leave(completionGroup);
-            }];
-        }
+        [assets addObject:result.assetIdentifier];
     }
     
-    dispatch_group_notify(completionGroup, dispatch_get_main_queue(), ^{
-        //  mapVideoToAsset can fail and return nil.
-        for (NSDictionary *asset in assets) {
-            if (nil == asset) {
-                self.callback(@[@{@"errorCode": errOthers}]);
-                return;
-            }
-        }
-        
+    dispatch_async(dispatch_get_main_queue(), ^{
         NSMutableDictionary *response = [[NSMutableDictionary alloc] init];
         [response setObject:assets forKey:@"assets"];
         

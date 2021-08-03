@@ -17,23 +17,11 @@ export interface CameraOptions
   cameraType?: CameraType;
 }
 
-export interface Asset {
-  base64?: string;
-  uri?: string;
-  width?: number;
-  height?: number;
-  fileSize?: number;
-  type?: string; //TODO
-  fileName?: string;
-  duration?: number;
-  creationTime?: number;
-}
-
 export interface ImagePickerResponse {
   didCancel?: boolean;
   errorCode?: ErrorCode;
   errorMessage?: string;
-  assets: Asset[];
+  assets: string[];
 }
 
 export type PhotoQuality =
