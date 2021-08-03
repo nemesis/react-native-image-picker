@@ -140,15 +140,46 @@ RCT_EXPORT_METHOD(launchImageLibrary:(NSDictionary *)options callback:(RCTRespon
         return;
     }
 
-    NSMutableArray<NSString *> *assets = [[NSMutableArray alloc] initWithCapacity:results.count];
-    
+    NSMutableArray<NSString *> *assetIdentifiers = [[NSMutableArray alloc] initWithCapacity:results.count];
+    NSMutableArray<NSDictionary *> *assets = [[NSMutableArray alloc] initWithCapacity:results.count];
+
+    dispatch_group_t completionGroup = dispatch_group_create();
+
     for (PHPickerResult *result in results) {
         if (result.assetIdentifier) {
-            [assets addObject:result.assetIdentifier];
+            [assetIdentifiers addObject:result.assetIdentifier];
         }
     }
     
-    dispatch_async(dispatch_get_main_queue(), ^{
+    PHContentEditingInputRequestOptions* options = [[PHContentEditingInputRequestOptions alloc] init];
+
+    [options setNetworkAccessAllowed:YES];
+    [options setCanHandleAdjustmentData:^BOOL(PHAdjustmentData* adjustmentData) {
+        return false;
+    }];
+
+    PHFetchResult<PHAsset *> *fetchResult = [PHAsset fetchAssetsWithLocalIdentifiers:assetIdentifiers options:nil];
+    [fetchResult enumerateObjectsUsingBlock:^(PHAsset* asset, NSUInteger idx, BOOL* stop) {
+        dispatch_group_enter(completionGroup);
+
+        [asset requestContentEditingInputWithOptions:options completionHandler:^(PHContentEditingInput* _Nullable contentEditingInput, NSDictionary * _Nonnull info) {
+            NSURL* assetURL = [contentEditingInput fullSizeImageURL];
+
+            if (assetURL) {
+                NSDate* assetDate = asset.creationDate ? asset.creationDate : asset.modificationDate;
+                NSTimeInterval creationTime = [assetDate timeIntervalSince1970];
+                NSString* filename = [asset valueForKey:@"filename"];
+
+                [assets addObject:@{
+                    @"creationTime": assetDate ? @(creationTime) : [NSNull null],
+                    @"filename": filename ? filename : @"unknown???",
+                    @"uri": [assetURL absoluteString]
+                }];
+            }
+        }];
+    }];
+
+    dispatch_group_notify(completionGroup, dispatch_get_main_queue(), ^{
         NSMutableDictionary *response = [[NSMutableDictionary alloc] init];
         [response setObject:assets forKey:@"assets"];
         

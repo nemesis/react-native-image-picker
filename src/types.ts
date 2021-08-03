@@ -17,11 +17,17 @@ export interface CameraOptions
   cameraType?: CameraType;
 }
 
+export interface Asset {
+  creationTime?: number;
+  filename: string;
+  uri: string;
+}
+
 export interface ImagePickerResponse {
   didCancel?: boolean;
   errorCode?: ErrorCode;
   errorMessage?: string;
-  assets: string[];
+  assets: Asset[];
 }
 
 export type PhotoQuality =
