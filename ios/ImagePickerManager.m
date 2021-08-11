@@ -162,22 +162,22 @@ RCT_EXPORT_METHOD(launchImageLibrary:(NSDictionary *)options callback:(RCTRespon
 
     PHFetchResult<PHAsset *> *fetchResult = [PHAsset fetchAssetsWithLocalIdentifiers:assetIdentifiers options:nil];
     [fetchResult enumerateObjectsUsingBlock:^(PHAsset* asset, NSUInteger idx, BOOL* stop) {
-        [asset requestContentEditingInputWithOptions:options completionHandler:^(PHContentEditingInput* _Nullable contentEditingInput, NSDictionary * _Nonnull info) {
-            NSURL* assetURL = [contentEditingInput fullSizeImageURL];
+        NSDate *assetDate = asset.creationDate ? asset.creationDate : asset.modificationDate;
+        NSTimeInterval creationTime = [assetDate timeIntervalSince1970];
 
-            NSDate* assetDate = asset.creationDate ? asset.creationDate : asset.modificationDate;
-            NSTimeInterval creationTime = [assetDate timeIntervalSince1970];
-            NSString* filename = [asset valueForKey:@"filename"];
+        NSString *filename = [asset valueForKey:@"filename"];
+        NSString *assetExtension = [filename pathExtension];
+        NSString *uppercasedExtension = [assetExtension uppercaseString];
+        NSString *assetId = asset.localIdentifier;
+        NSString *assetUri = [NSString stringWithFormat:@"assets-library://asset/asset.%@?id=%@&ext=%@", uppercasedExtension, assetId, uppercasedExtension];
 
-            [assets addObject:@{
-                @"creationTime": assetDate ? @(creationTime * 1000.0) : [NSNull null],
-                @"filename": filename ? filename : [NSNull null],
-                @"uri": assetURL ? [assetURL absoluteString] : [NSNull null]
-            }];
-
-
-            dispatch_group_leave(completionGroup);
+        [assets addObject:@{
+            @"creationTime": assetDate ? @(creationTime * 1000.0) : [NSNull null],
+            @"filename": filename ? filename : [NSNull null],
+            @"uri": assetUri
         }];
+
+        dispatch_group_leave(completionGroup);
     }];
 
     dispatch_group_notify(completionGroup, dispatch_get_main_queue(), ^{
