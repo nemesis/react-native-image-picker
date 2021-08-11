@@ -168,7 +168,8 @@ RCT_EXPORT_METHOD(launchImageLibrary:(NSDictionary *)options callback:(RCTRespon
         NSString *filename = [asset valueForKey:@"filename"];
         NSString *assetExtension = [filename pathExtension];
         NSString *uppercasedExtension = [assetExtension uppercaseString];
-        NSString *assetId = asset.localIdentifier;
+        NSString *assetLocalIdentifier = asset.localIdentifier;
+        NSString *assetId = [assetLocalIdentifier stringByReplacingOccurrencesOfString:@"/.*" withString:@"" options:NSRegularExpressionSearch range:NSMakeRange(0, assetLocalIdentifier.length)];
         NSString *assetUri = [NSString stringWithFormat:@"assets-library://asset/asset.%@?id=%@&ext=%@", uppercasedExtension, assetId, uppercasedExtension];
 
         [assets addObject:@{
