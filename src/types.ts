@@ -20,6 +20,7 @@ export interface CameraOptions
 export interface Asset {
   creationTime: number | undefined;
   filename: string | undefined;
+  localIdentifier: string | undefined;
   uri: string | undefined;
 }
 
