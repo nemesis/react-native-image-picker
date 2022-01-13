@@ -174,6 +174,7 @@ RCT_EXPORT_METHOD(launchImageLibrary:(NSDictionary *)options callback:(RCTRespon
 
         [assets addObject:@{
             @"creationTime": assetDate ? @(creationTime * 1000.0) : [NSNull null],
+            @"localIdentifier": assetLocalIdentifier ? assetLocalIdentifier : [NSNull null],
             @"filename": filename ? filename : [NSNull null],
             @"uri": assetUri
         }];
