@@ -4,6 +4,7 @@
 #import <AVFoundation/AVFoundation.h>
 #import <Photos/Photos.h>
 #import <PhotosUI/PhotosUI.h>
+#import <CoreLocation/CoreLocation.h>
 
 @import MobileCoreServices;
 
@@ -163,6 +164,14 @@ RCT_EXPORT_METHOD(launchImageLibrary:(NSDictionary *)options callback:(RCTRespon
     PHFetchResult<PHAsset *> *fetchResult = [PHAsset fetchAssetsWithLocalIdentifiers:assetIdentifiers options:nil];
     [fetchResult enumerateObjectsUsingBlock:^(PHAsset* asset, NSUInteger idx, BOOL* stop) {
         NSDate *assetDate = asset.creationDate ? asset.creationDate : asset.modificationDate;
+
+        NSDictionary* locationDictionary;
+
+        if (asset.location) {
+            CLLocationCoordinate2D locationCoordinate = asset.location.coordinate;
+            locationDictionary = @{ @"latitude": @(locationCoordinate.latitude), @"longitude": @(locationCoordinate.longitude) };
+        }
+
         NSTimeInterval creationTime = [assetDate timeIntervalSince1970];
 
         NSString *filename = [asset valueForKey:@"filename"];
@@ -174,9 +183,10 @@ RCT_EXPORT_METHOD(launchImageLibrary:(NSDictionary *)options callback:(RCTRespon
 
         [assets addObject:@{
             @"creationTime": assetDate ? @(creationTime * 1000.0) : [NSNull null],
+            @"location": locationDictionary ? locationDictionary : [NSNull null],
             @"localIdentifier": assetLocalIdentifier ? assetLocalIdentifier : [NSNull null],
             @"filename": filename ? filename : [NSNull null],
-            @"uri": assetUri
+            @"uri": assetUri,
         }];
 
         dispatch_group_leave(completionGroup);
