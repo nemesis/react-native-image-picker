@@ -143,6 +143,10 @@ RCT_EXPORT_METHOD(launchImageLibrary:(NSDictionary *)options callback:(RCTRespon
 
     NSMutableArray<NSString *> *assetIdentifiers = [[NSMutableArray alloc] initWithCapacity:results.count];
     NSMutableArray<NSDictionary *> *assets = [[NSMutableArray alloc] initWithCapacity:results.count];
+    PHImageManager *imageManager = [PHImageManager defaultManager];
+    PHImageRequestOptions *requestOptions = [[PHImageRequestOptions alloc] init];
+
+    [requestOptions setSynchronous:YES];
 
     dispatch_group_t completionGroup = dispatch_group_create();
 
@@ -153,19 +157,21 @@ RCT_EXPORT_METHOD(launchImageLibrary:(NSDictionary *)options callback:(RCTRespon
             [assetIdentifiers addObject:result.assetIdentifier];
         }
     }
-    
-    PHContentEditingInputRequestOptions* options = [[PHContentEditingInputRequestOptions alloc] init];
-
-    [options setNetworkAccessAllowed:YES];
-    [options setCanHandleAdjustmentData:^BOOL(PHAdjustmentData* adjustmentData) {
-        return false;
-    }];
 
     PHFetchResult<PHAsset *> *fetchResult = [PHAsset fetchAssetsWithLocalIdentifiers:assetIdentifiers options:nil];
     [fetchResult enumerateObjectsUsingBlock:^(PHAsset* asset, NSUInteger idx, BOOL* stop) {
         NSDate *assetDate = asset.creationDate ? asset.creationDate : asset.modificationDate;
 
-        NSDictionary* locationDictionary;
+        NSDictionary *locationDictionary;
+        __block NSString *exifDateString;
+
+        [imageManager requestImageDataForAsset:asset options:requestOptions resultHandler:^(NSData *imageData, NSString *dataUTI, UIImageOrientation orientation, NSDictionary *info) {
+            CIImage *ciImage = [CIImage imageWithData:imageData];
+            NSDictionary *exifData = [[ciImage properties] valueForKey:@"{Exif}"];
+
+            exifDateString = [exifData valueForKey:@"DateTimeOriginal"];
+        }];
+
 
         if (asset.location) {
             CLLocationCoordinate2D locationCoordinate = asset.location.coordinate;
@@ -183,6 +189,7 @@ RCT_EXPORT_METHOD(launchImageLibrary:(NSDictionary *)options callback:(RCTRespon
 
         [assets addObject:@{
             @"creationTime": assetDate ? @(creationTime * 1000.0) : [NSNull null],
+            @"originalDateTime": exifDateString ? exifDateString : [NSNull null],
             @"location": locationDictionary ? locationDictionary : [NSNull null],
             @"localIdentifier": assetLocalIdentifier ? assetLocalIdentifier : [NSNull null],
             @"filename": filename ? filename : [NSNull null],

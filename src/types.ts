@@ -19,6 +19,7 @@ export interface CameraOptions
 
 export interface Asset {
   creationTime: number | undefined;
+  originalDateTime: string | undefined;
   location?: {
     latitude: number;
     longitude: number;
