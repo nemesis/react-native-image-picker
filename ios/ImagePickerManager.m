@@ -146,6 +146,7 @@ RCT_EXPORT_METHOD(launchImageLibrary:(NSDictionary *)options callback:(RCTRespon
     PHImageManager *imageManager = [PHImageManager defaultManager];
     PHImageRequestOptions *requestOptions = [[PHImageRequestOptions alloc] init];
 
+    [requestOptions setNetworkAccessAllowed:YES];
     [requestOptions setSynchronous:YES];
 
     dispatch_group_t completionGroup = dispatch_group_create();
