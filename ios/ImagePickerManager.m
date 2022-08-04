@@ -53,12 +53,12 @@ RCT_EXPORT_METHOD(launchImageLibrary:(NSDictionary *)options callback:(RCTRespon
 - (void)launchImagePicker:(NSDictionary *)options callback:(RCTResponseSenderBlock)callback
 {
     self.callback = callback;
-    
+
     if (target == camera && [ImagePickerUtils isSimulator]) {
         self.callback(@[@{@"errorCode": errCameraUnavailable}]);
         return;
     }
-    
+
     self.options = options;
 
     if (@available(iOS 14, *)) {
@@ -72,7 +72,7 @@ RCT_EXPORT_METHOD(launchImageLibrary:(NSDictionary *)options callback:(RCTRespon
             return;
         }
     }
-    
+
     UIImagePickerController *picker = [[UIImagePickerController alloc] init];
     [ImagePickerUtils setupPickerFromOptions:picker options:self.options target:target];
     picker.delegate = self;
@@ -163,15 +163,6 @@ RCT_EXPORT_METHOD(launchImageLibrary:(NSDictionary *)options callback:(RCTRespon
         NSDate *assetDate = asset.creationDate ? asset.creationDate : asset.modificationDate;
 
         NSDictionary *locationDictionary;
-        __block NSString *exifDateString;
-
-        [imageManager requestImageDataForAsset:asset options:requestOptions resultHandler:^(NSData *imageData, NSString *dataUTI, UIImageOrientation orientation, NSDictionary *info) {
-            CIImage *ciImage = [CIImage imageWithData:imageData];
-            NSDictionary *exifData = [[ciImage properties] valueForKey:@"{Exif}"];
-
-            exifDateString = [exifData valueForKey:@"DateTimeOriginal"];
-        }];
-
 
         if (asset.location) {
             CLLocationCoordinate2D locationCoordinate = asset.location.coordinate;
@@ -189,10 +180,11 @@ RCT_EXPORT_METHOD(launchImageLibrary:(NSDictionary *)options callback:(RCTRespon
 
         [assets addObject:@{
             @"creationTime": assetDate ? @(creationTime * 1000.0) : [NSNull null],
-            @"originalDateTime": exifDateString ? exifDateString : [NSNull null],
             @"location": locationDictionary ? locationDictionary : [NSNull null],
             @"localIdentifier": assetLocalIdentifier ? assetLocalIdentifier : [NSNull null],
             @"filename": filename ? filename : [NSNull null],
+            @"width": @(asset.pixelWidth),
+            @"height": @(asset.pixelHeight),
             @"uri": assetUri,
         }];
 
@@ -202,7 +194,7 @@ RCT_EXPORT_METHOD(launchImageLibrary:(NSDictionary *)options callback:(RCTRespon
     dispatch_group_notify(completionGroup, dispatch_get_main_queue(), ^{
         NSMutableDictionary *response = [[NSMutableDictionary alloc] init];
         [response setObject:assets forKey:@"assets"];
-        
+
         self.callback(@[response]);
     });
 }
@@ -215,11 +207,11 @@ RCT_EXPORT_METHOD(launchImageLibrary:(NSDictionary *)options callback:(RCTRespon
 
 -(NSMutableDictionary *)mapImageToAsset:(UIImage *)image data:(NSData *)data {
     NSString *fileType = [ImagePickerUtils getFileType:data];
-    
+
     if ((target == camera) && [self.options[@"saveToPhotos"] boolValue]) {
         UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil);
     }
-    
+
     if (![fileType isEqualToString:@"gif"]) {
         image = [ImagePickerUtils resizeImage:image
                                      maxWidth:[self.options[@"maxWidth"] floatValue]
@@ -227,7 +219,7 @@ RCT_EXPORT_METHOD(launchImageLibrary:(NSDictionary *)options callback:(RCTRespon
     }
 
     NSMutableDictionary *asset = [[NSMutableDictionary alloc] init];
-    
+
     CGImageSourceRef source = CGImageSourceCreateWithData((CFDataRef)data, NULL);
     NSDictionary *metadata = (NSDictionary *) CFBridgingRelease(CGImageSourceCopyPropertiesAtIndex(source, 0, NULL));
     NSDictionary *exifTiffDictionary = [metadata objectForKey:(NSString *)kCGImagePropertyTIFFDictionary];
@@ -237,13 +229,13 @@ RCT_EXPORT_METHOD(launchImageLibrary:(NSDictionary *)options callback:(RCTRespon
     if (dateTime) {
         asset[@"creationTime"] = @([exifCreationTimeFormatter dateFromString:@(dateTime.UTF8String)].timeIntervalSince1970 * 1000);
     }
-    
+
     if ([fileType isEqualToString:@"jpg"]) {
         data = UIImageJPEGRepresentation(image, [self.options[@"quality"] floatValue]);
     } else if ([fileType isEqualToString:@"png"]) {
         data = UIImagePNGRepresentation(image);
     }
-    
+
     asset[@"type"] = [@"image/" stringByAppendingString:fileType];
 
     NSString *fileName = [self getImageFileName:fileType];
@@ -267,7 +259,7 @@ RCT_EXPORT_METHOD(launchImageLibrary:(NSDictionary *)options callback:(RCTRespon
     asset[@"fileName"] = fileName;
     asset[@"width"] = @(image.size.width);
     asset[@"height"] = @(image.size.height);
-    
+
     return asset;
 }
 
@@ -279,10 +271,10 @@ RCT_EXPORT_METHOD(launchImageLibrary:(NSDictionary *)options callback:(RCTRespon
     if ((target == camera) && [self.options[@"saveToPhotos"] boolValue]) {
         UISaveVideoAtPathToSavedPhotosAlbum(url.path, nil, nil, nil);
     }
-    
+
     if (![url.URLByResolvingSymlinksInPath.path isEqualToString:videoDestinationURL.URLByResolvingSymlinksInPath.path]) {
         NSFileManager *fileManager = [NSFileManager defaultManager];
-        
+
         // Delete file if it already exists
         if ([fileManager fileExistsAtPath:videoDestinationURL.path]) {
             [fileManager removeItemAtURL:videoDestinationURL error:nil];
@@ -302,11 +294,11 @@ RCT_EXPORT_METHOD(launchImageLibrary:(NSDictionary *)options callback:(RCTRespon
           }
         }
     }
-    
+
     NSMutableDictionary *asset = [[NSMutableDictionary alloc] init];
     asset[@"duration"] = @(roundf(CMTimeGetSeconds([AVAsset assetWithURL:videoDestinationURL].duration)));
     asset[@"uri"] = videoDestinationURL.absoluteString;
-    
+
     return asset;
 }
 

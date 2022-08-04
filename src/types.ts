@@ -19,13 +19,14 @@ export interface CameraOptions
 
 export interface Asset {
   creationTime: number | undefined;
-  originalDateTime: string | undefined;
   location?: {
     latitude: number;
     longitude: number;
   };
   filename: string | undefined;
   localIdentifier: string | undefined;
+  width: number;
+  height: number;
   uri: string | undefined;
 }
 
